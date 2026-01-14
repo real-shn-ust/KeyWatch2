@@ -1,11 +1,7 @@
-import os
 import json
 import base64
-from collections import namedtuple
 
 from celery import shared_task
-from cryptography import x509
-from cryptography.hazmat.backends import default_backend
 import winrm
 
 from .common import _parse_certificate
