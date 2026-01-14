@@ -1,3 +1,5 @@
 Flask
 Fabric
 cryptography
+celery
+redis

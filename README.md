@@ -1,34 +1,72 @@
 # KeyWatch2
 
-A Flask application to scan and parse certificates on remote Linux machines using Fabric and cryptography.
+A Flask API for scanning and parsing certificates on remote Linux machines using Fabric and Celery for asynchronous processing.
 
 ## Features
 
-- Scans remote Linux machines for certificate files (.crt, .cer, .pem, .der, .p7b, .p7c, .pfx, .p12)
+- Asynchronous certificate scanning on remote machines
 - Parses certificate details using cryptography library
 - Extracts subject, issuer, validity dates, serial number, and signature algorithm
-- Web-based interface for easy use
+- API-only interface with task status checking
+- Containerized with Docker Compose
 
 ## Setup
+
+### Option 1: Local Development
 
 1. Install dependencies:
    ```
    pip install -r requirements.txt
    ```
 
-2. Ensure you have SSH key-based access to the remote machine.
+2. Start Redis (for Celery broker):
+   ```
+   redis-server
+   ```
 
-3. Run the application:
+3. Start Celery worker:
+   ```
+   celery -A tasks worker --loglevel=info
+   ```
+
+4. Run the Flask app:
    ```
    python app.py
    ```
 
-4. Open your browser to `http://localhost:5000`
+### Option 2: Docker Compose (Recommended)
 
-5. Enter the remote host details and scan.
+1. Build and start all services:
+   ```
+   docker-compose up --build
+   ```
+
+   This will start:
+   - Flask web app on port 5000
+   - Redis on port 6379
+   - Celery worker
+
+2. Stop services:
+   ```
+   docker-compose down
+   ```
+
+## API Usage
+
+### Start Scan
+```
+GET /scan?host=example.com&user=myuser&password=mypass
+```
+Returns: `{"task_id": "uuid"}` (202 status)
+
+### Check Status
+```
+GET /status/<task_id>
+```
+Returns task status and results when complete.
 
 ## Requirements
 
-- Python 3.x
-- SSH access to remote machine with key-based authentication
-- Sudo access on remote machine for finding and reading certificate files
+- Docker and Docker Compose (for containerized deployment)
+- SSH access to remote machine with password authentication
+- Sudo access on remote machine for file discovery and reading
