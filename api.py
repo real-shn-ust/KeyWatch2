@@ -1,41 +1,34 @@
-from flask import Blueprint, request, jsonify
-from .tasks import scan_certificates
+from flask import Blueprint, jsonify, request
 
-api = Blueprint('api', __name__)
+from tasks import scan_certificates
 
-@api.route('/scan', methods=['GET'])
+api = Blueprint("api", __name__)
+
+
+@api.route("/scan", methods=["GET"])
 def scan():
-    host = request.args.get('host')
-    user = request.args.get('user')
-    password = request.args.get('password')
-    
+    host = request.args.get("host")
+    user = request.args.get("user")
+    password = request.args.get("password")
+
     if not host or not user or not password:
-        return jsonify({"error": "Missing required parameters: host, user, password"}), 400
-    
+        return jsonify(
+            {"error": "Missing required parameters: host, user, password"}
+        ), 400
+
     task = scan_certificates.delay(host, user, password)
     return jsonify({"task_id": task.id}), 202
 
-@api.route('/status/<task_id>', methods=['GET'])
+
+@api.route("/status/<task_id>", methods=["GET"])
 def task_status(task_id):
     task = scan_certificates.AsyncResult(task_id)
-    if task.state == 'PENDING':
-        response = {
-            'state': task.state,
-            'status': 'Task is pending...'
-        }
-    elif task.state == 'PROGRESS':
-        response = {
-            'state': task.state,
-            'status': task.info.get('status', '')
-        }
-    elif task.state == 'SUCCESS':
-        response = {
-            'state': task.state,
-            'result': task.result
-        }
+    if task.state == "PENDING":
+        response = {"state": task.state, "status": "Task is pending..."}
+    elif task.state == "PROGRESS":
+        response = {"state": task.state, "status": task.info.get("status", "")}
+    elif task.state == "SUCCESS":
+        response = {"state": task.state, "result": task.result}
     else:
-        response = {
-            'state': task.state,
-            'status': str(task.info)
-        }
+        response = {"state": task.state, "status": str(task.info)}
     return jsonify(response)

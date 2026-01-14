@@ -1,16 +1,20 @@
+import os
+from collections import namedtuple
+
 from celery import Celery
-from fabric import Connection
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
-from collections import namedtuple
-import os
+from fabric import Connection
 
-celery = Celery('tasks', broker=os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0'))
+celery = Celery(
+    "tasks", broker=os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
+)
 
 Certificate = namedtuple(
     "Certificate",
     "subject, issuer, not_valid_before, not_valid_after, serial_number, signature_algorithm",
 )
+
 
 def _parse_certificate(content: bytes) -> Certificate | None:
     """
@@ -41,11 +45,12 @@ def _parse_certificate(content: bytes) -> Certificate | None:
         signature_algorithm=certificate.signature_algorithm_oid._name,
     )
 
+
 @celery.task
 def scan_certificates(host, user, password):
     try:
-        conn = Connection(host=host, user=user, connect_kwargs={'password': password})
-        
+        conn = Connection(host=host, user=user, connect_kwargs={"password": password})
+
         find_cmd = (
             "sudo find / -type f "
             "( -iname '*.crt' -o -iname '*.cer' -o -iname '*.pem' "
@@ -54,8 +59,8 @@ def scan_certificates(host, user, password):
             "-not -path '/proc/*' -not -path '/sys/*' -not -path '/dev/*' -not -path '/run/*'"
         )
         result = conn.sudo(find_cmd, hide=True)
-        files = result.stdout.strip().split('\n')
-        
+        files = result.stdout.strip().split("\n")
+
         certificates = []
         for file_path in files:
             if file_path.strip():
@@ -65,18 +70,20 @@ def scan_certificates(host, user, password):
                     content = cat_result.stdout.encode()
                     cert = _parse_certificate(content)
                     if cert:
-                        certificates.append({
-                            "file_path": file_path,
-                            "subject": cert.subject,
-                            "issuer": cert.issuer,
-                            "not_valid_before": cert.not_valid_before.isoformat(),
-                            "not_valid_after": cert.not_valid_after.isoformat(),
-                            "serial_number": cert.serial_number,
-                            "signature_algorithm": cert.signature_algorithm
-                        })
+                        certificates.append(
+                            {
+                                "file_path": file_path,
+                                "subject": cert.subject,
+                                "issuer": cert.issuer,
+                                "not_valid_before": cert.not_valid_before.isoformat(),
+                                "not_valid_after": cert.not_valid_after.isoformat(),
+                                "serial_number": cert.serial_number,
+                                "signature_algorithm": cert.signature_algorithm,
+                            }
+                        )
                 except Exception as e:
                     pass  # Skip files that can't be read or parsed
-        
+
         return {"certificates": certificates}
     except Exception as e:
         return {"error": str(e)}
