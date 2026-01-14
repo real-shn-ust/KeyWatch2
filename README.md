@@ -55,7 +55,14 @@ A Flask API for scanning and parsing certificates on remote Linux machines using
 
 ### Start Scan
 ```
-GET /scan?host=example.com&user=myuser&password=mypass
+POST /scan
+Content-Type: application/json
+
+{
+  "host": "example.com",
+  "user": "myuser",
+  "password": "mypass"
+}
 ```
 Returns: `{"task_id": "uuid"}` (202 status)
 

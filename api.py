@@ -5,11 +5,12 @@ from tasks import scan_certificates
 api = Blueprint("api", __name__)
 
 
-@api.route("/scan", methods=["GET"])
+@api.route("/scan", methods=["POST"])
 def scan():
-    host = request.args.get("host")
-    user = request.args.get("user")
-    password = request.args.get("password")
+    data = request.get_json()
+    host = data.get("host")
+    user = data.get("user")
+    password = data.get("password")
 
     if not host or not user or not password:
         return jsonify(
