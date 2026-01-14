@@ -9,14 +9,25 @@ def scan_certificates_linux(host, user, password):
     try:
         conn = Connection(host=host, user=user, connect_kwargs={"password": password})
 
-        find_cmd = (
-            "sudo find / -type f "
-            "( -iname '*.crt' -o -iname '*.cer' -o -iname '*.pem' "
-            "-o -iname '*.der' -o -iname '*.p7b' -o -iname '*.p7c' "
-            "-o -iname '*.pfx' -o -iname '*.p12' ) "
-            "-not -path '/proc/*' -not -path '/sys/*' -not -path '/dev/*' -not -path '/run/*'"
-        )
-        result = conn.sudo(find_cmd, hide=True)
+        # find_cmd = (
+        #     "sudo find / -type f "
+        #     "( -iname '*.crt' -o -iname '*.cer' -o -iname '*.pem' "
+        #     "-o -iname '*.der' -o -iname '*.p7b' -o -iname '*.p7c' "
+        #     "-o -iname '*.pfx' -o -iname '*.p12' ) "
+        #     "-not -path '/proc/*' -not -path '/sys/*' -not -path '/dev/*' -not -path '/run/*'"
+        # )
+        command = """sudo find / -type f \\( \
+                  -iname \"*.crt\" -o -iname \"*.cer\" -o -iname \"*.pem\" -o -iname \"*.der\" -o \
+                    -iname \"*.p7b\" -o -iname \"*.p7c\" -o -iname \"*.pfx\" -o -iname \"*.p12\" \
+                    \) \
+                    -not -path \"/proc/*\" \
+                    -not -path \"/sys/*\" \
+                    -not -path \"/dev/*\" \
+                    -not -path \"/run/*\" \
+                    2>/dev/null
+                    """
+
+        result = conn.sudo(command, hide=True)
         files = result.stdout.strip().split("\n")
 
         certificates = []
