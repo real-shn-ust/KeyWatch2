@@ -1,7 +1,6 @@
 from flask import Blueprint, jsonify, request
 
-from .tasks import celery
-from tasks import scan_certificates_linux, scan_certificates_windows
+from tasks import celery, scan_certificates_linux, scan_certificates_windows
 
 api = Blueprint("api", __name__)
 

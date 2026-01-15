@@ -12,9 +12,8 @@ def scan_certificates_windows(host, user, password):
     try:
         # Create WinRM session
         session = winrm.Session(
-            f"http://{host}:5985/wsman",
+            host,
             auth=(user, password),
-            transport="ntlm",  # or 'kerberos' if needed
         )
 
         # Get certificates from Windows Certificate Store using PowerShell
