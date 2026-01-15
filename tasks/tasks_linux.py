@@ -1,3 +1,7 @@
+import os
+from datetime import datetime
+
+import pandas as pd
 from celery import shared_task
 from fabric import Connection
 
@@ -9,13 +13,6 @@ def scan_certificates_linux(host, user, password):
     try:
         conn = Connection(host=host, user=user, connect_kwargs={"password": password})
 
-        # find_cmd = (
-        #     "sudo find / -type f "
-        #     "( -iname '*.crt' -o -iname '*.cer' -o -iname '*.pem' "
-        #     "-o -iname '*.der' -o -iname '*.p7b' -o -iname '*.p7c' "
-        #     "-o -iname '*.pfx' -o -iname '*.p12' ) "
-        #     "-not -path '/proc/*' -not -path '/sys/*' -not -path '/dev/*' -not -path '/run/*'"
-        # )
         command = """sudo find / -type f \\( \
                   -iname \"*.crt\" -o -iname \"*.cer\" -o -iname \"*.pem\" -o -iname \"*.der\" -o \
                     -iname \"*.p7b\" -o -iname \"*.p7c\" -o -iname \"*.pfx\" -o -iname \"*.p12\" \
@@ -53,6 +50,18 @@ def scan_certificates_linux(host, user, password):
                 except Exception as e:
                     pass  # Skip files that can't be read or parsed
 
-        return {"certificates": certificates}
+        # Save to Excel file
+        if certificates:
+            df = pd.DataFrame(certificates)
+            output_dir = "certificate_reports"
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = os.path.join(output_dir, f"certificates_linux_{host}_{timestamp}.xlsx")
+            df.to_excel(filename, index=False, engine="openpyxl")
+            return {"status": "success", "file": filename, "count": len(certificates)}
+        else:
+            return {"status": "no_certificates_found"}
     except Exception as e:
         return {"error": str(e)}

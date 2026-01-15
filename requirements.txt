@@ -4,3 +4,5 @@ cryptography
 celery
 redis
 pywinrm
+pandas
+openpyxl

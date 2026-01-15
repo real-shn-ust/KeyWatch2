@@ -1,6 +1,9 @@
 import base64
 import json
+import os
+from datetime import datetime
 
+import pandas as pd
 import winrm
 from celery import shared_task
 
@@ -58,6 +61,18 @@ def scan_certificates_windows(host, user, password):
             except Exception as e:
                 pass  # Skip certificates that can't be parsed
 
-        return {"certificates": certificates}
+        # Save to Excel file
+        if certificates:
+            df = pd.DataFrame(certificates)
+            output_dir = "certificate_reports"
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = os.path.join(output_dir, f"certificates_windows_{host}_{timestamp}.xlsx")
+            df.to_excel(filename, index=False, engine="openpyxl")
+            return {"status": "success", "file": filename, "count": len(certificates)}
+        else:
+            return {"status": "no_certificates_found"}
     except Exception as e:
         return {"error": str(e)}
