@@ -67,9 +67,11 @@ def scan_certificates_windows(host, user, password):
             output_dir = "certificate_reports"
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
-            
+
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = os.path.join(output_dir, f"certificates_windows_{host}_{timestamp}.xlsx")
+            filename = os.path.join(
+                output_dir, f"certificates_windows_{host}_{timestamp}.xlsx"
+            )
             df.to_excel(filename, index=False, engine="openpyxl")
             return {"status": "success", "file": filename, "count": len(certificates)}
         else:
