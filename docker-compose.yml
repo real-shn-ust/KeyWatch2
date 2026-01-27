@@ -8,8 +8,8 @@ services:
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
-    volumes:
-      - ./certificate_reports:/app/certificate_reports
+    # volumes:
+    #   - ./certificate_reports:/app/certificate_reports
     networks:
       - keywatch
 
@@ -28,8 +28,15 @@ services:
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
-    volumes:
-      - ./certificate_reports:/app/certificate_reports
+    # volumes:
+    #   - ./certificate_reports:/app/certificate_reports
+    networks:
+      - keywatch
+
+  mongo:
+    image: mongo:noble
+    ports:
+      - "27107:27107"
     networks:
       - keywatch
 

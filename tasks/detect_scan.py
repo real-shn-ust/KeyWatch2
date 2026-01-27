@@ -65,11 +65,11 @@ def _detect_os(
     return None
 
 
-@shared_task
+# @shared_task
 def detect_and_scan(host: str, user: str, password: str):
     os = _detect_os(host, user, password, user, password)
 
     if os == "linux":
-        scan_certificates_linux.delay(host, user, password)
+        return scan_certificates_linux.s(host, user, password)
     elif os == "windows":
-        scan_certificates_windows.delay(host, user, password)
+        return scan_certificates_windows.s(host, user, password)

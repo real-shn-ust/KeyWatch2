@@ -2,7 +2,7 @@ import concurrent.futures
 import ipaddress
 
 import nmap
-from celery import group
+from celery import chain, group
 from celery.result import GroupResult
 from flask import Blueprint, jsonify, request
 
@@ -38,7 +38,9 @@ def scan():
     if not hosts:
         return jsonify({"error": "No active hosts found in the specified range"}), 400
 
-    jobs = group(detect_and_scan.s(host, user, password) for host in hosts)
+    jobs = group(
+        task for host in hosts if (task := detect_and_scan(host, user, password))
+    )
 
     res = jobs()
     res.save()
@@ -48,16 +50,6 @@ def scan():
 
 @api.route("/status/<task_id>", methods=["GET"])
 def task_status(task_id):
-    # task = celery.AsyncResult(task_id)
-    # if task.state == "PENDING":
-    #     response = {"state": task.state, "status": "Task is pending..."}
-    # elif task.state == "PROGRESS":
-    #     response = {"state": task.state, "status": task.info.get("status", "")}
-    # elif task.state == "SUCCESS":
-    #     response = {"state": task.state, "result": task.result}
-    # else:
-    #     response = {"state": task.state, "status": str(task.info)}
-    # return jsonify(response)
     res = GroupResult.restore(task_id)
     return {
         "ready": res.ready() if res else False,
