@@ -5,7 +5,7 @@ import pandas as pd
 from celery import shared_task
 from fabric import Connection
 
-from tasks import mongo
+import mongo
 
 from .common import _parse_certificate
 

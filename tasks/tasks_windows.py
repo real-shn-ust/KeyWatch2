@@ -7,7 +7,7 @@ import pandas as pd
 import winrm
 from celery import shared_task
 
-from tasks import mongo
+import mongo
 
 from .common import _parse_certificate
 
