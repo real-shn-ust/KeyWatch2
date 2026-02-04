@@ -1,6 +1,7 @@
 services:
   web:
     build: .
+    command: flask -A app run
     ports:
       - "5000:5000"
     depends_on:
@@ -8,6 +9,7 @@ services:
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - FLASK_RUN_HOST=0.0.0.0
     # volumes:
     #   - ./certificate_reports:/app/certificate_reports
     networks:

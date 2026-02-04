@@ -5,14 +5,40 @@ import nmap
 from celery import chain, group
 from celery.result import GroupResult
 from flask import Blueprint, jsonify, request
+from flask_jwt_extended import create_access_token, jwt_required
+from werkzeug.security import check_password_hash
 
-import mongo
-from tasks import celery, detect_and_scan
+from . import mongo
+from .tasks import celery, detect_and_scan
 
 api = Blueprint("api", __name__)
 
+USERS = {
+    "admin": "scrypt:32768:8:1$UdmG9NOUXhHcl2jP$757ea452d404b5a84f13c835f01c49cda6023790c74e3ff5a7502a285a40b17685a24924bea785fc15b5078053ec316b2b49b6d76728d26ee05ad9608e099c95",
+    "test": "test",
+}
+
+
+@api.post("/login")
+def login():
+    data = request.get_json()
+    username = data.get("username", "")
+    password = data.get("password", "")
+
+    hpass = USERS.get(username)
+
+    if password != USERS.get(username):
+        return {"error": "invalid username or password"}, 401
+
+    # if (not check_password_hash(password, hpass)):
+    #     return {"error": "invalid username or password"}, 401
+
+    access_token = create_access_token(identity=username)
+    return jsonify(access_token=access_token)
+
 
 @api.route("/scan", methods=["POST"])
+@jwt_required()
 def scan():
     data = request.get_json()
     host = data.get("host")
@@ -50,6 +76,7 @@ def scan():
 
 
 @api.route("/status/<task_id>", methods=["GET"])
+@jwt_required()
 def task_status(task_id):
     res = GroupResult.restore(task_id)
     return {
@@ -60,6 +87,7 @@ def task_status(task_id):
 
 
 @api.get("/certificates")
+@jwt_required()
 def certificates():
     page = int(request.args.get("page", 1))
     page_size = int(request.args.get("page_size", 10))
@@ -82,6 +110,7 @@ def certificates():
 
 
 @api.get("/certificates/<id>")
+@jwt_required()
 def certificate(id):
     document = mongo.get(id)
 

@@ -7,12 +7,14 @@ import pandas as pd
 import winrm
 from celery import shared_task
 
-import mongo
-
+try:
+    from keywatch import mongo
+except ImportError:
+    import mongo
 from .common import _parse_certificate
 
 
-@shared_task
+@shared_task(name="keywatch.tasks.tasks_windows.scan_certificates_windows")
 def scan_certificates_windows(host, user, password):
     try:
         # Create WinRM session

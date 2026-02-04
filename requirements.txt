@@ -9,3 +9,5 @@ openpyxl
 python-nmap
 requests
 pymongo
+flask-jwt-extended
+werkzeug

@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from bson import ObjectId
 from pymongo import MongoClient
 
 HOST = "mongo"
@@ -29,4 +30,4 @@ def documents(skip=0, page_size=10):
 
 
 def get(id):
-    return collection.find_one({"_id": id}, {"_id": 0})
+    return collection.find_one({"_id": ObjectId(id)}, {"_id": 0})

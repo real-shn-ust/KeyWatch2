@@ -5,12 +5,14 @@ import pandas as pd
 from celery import shared_task
 from fabric import Connection
 
-import mongo
-
+try:
+    from keywatch import mongo
+except ImportError:
+    import mongo
 from .common import _parse_certificate
 
 
-@shared_task
+@shared_task(name="keywatch.tasks.tasks_linux.scan_certificates_linux")
 def scan_certificates_linux(host, user, password):
     try:
         conn = Connection(host=host, user=user, connect_kwargs={"password": password})

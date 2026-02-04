@@ -7,8 +7,12 @@ from paramiko.ssh_exception import AuthenticationException, NoValidConnectionsEr
 from requests.exceptions import ConnectionError
 from winrm.exceptions import InvalidCredentialsError
 
-from tasks.tasks_linux import scan_certificates_linux
-from tasks.tasks_windows import scan_certificates_windows
+try:
+    from tasks.tasks_linux import scan_certificates_linux
+    from tasks.tasks_windows import scan_certificates_windows
+except ImportError:
+    from .tasks_linux import scan_certificates_linux
+    from .tasks_windows import scan_certificates_windows
 
 
 def _check_linux(ip: str, username: str, password: str) -> str | None:
