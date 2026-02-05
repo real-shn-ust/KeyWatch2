@@ -14,8 +14,8 @@ except ImportError:
 from .common import _parse_certificate
 
 
-@shared_task(name="keywatch.tasks.tasks_windows.scan_certificates_windows")
-def scan_certificates_windows(host, user, password):
+@shared_task(name="keywatch.tasks.tasks_windows.scan_certificates_windows", bind=True)
+def scan_certificates_windows(self, host, user, password):
     try:
         # Create WinRM session
         session = winrm.Session(
@@ -45,7 +45,8 @@ def scan_certificates_windows(host, user, password):
         cert_data = json.loads(result.std_out.decode().strip())
 
         certificates = []
-        for item in cert_data:
+        total_files = len(cert_data)
+        for count, item in enumerate(cert_data):
             try:
                 content = base64.b64decode(item["RawData"])
                 cert = _parse_certificate(content)
@@ -62,6 +63,10 @@ def scan_certificates_windows(host, user, password):
                             "signature_algorithm": cert.signature_algorithm,
                         }
                     )
+                    self.update_state(
+                        state="PROGRESS",
+                        meta={"current": count + 1, "total": total_files},
+                    )
             except Exception as e:
                 pass  # Skip certificates that can't be parsed
 
@@ -69,7 +74,7 @@ def scan_certificates_windows(host, user, password):
         if certificates:
             data = {"host": host, "certificates": certificates}
             mongo.insert(data)
-            return {"status": "certificate saved"}
+            return {"current": count, "total": total_files}
         else:
             return {"status": "no certificates found"}
     except Exception as e:

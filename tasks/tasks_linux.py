@@ -12,14 +12,13 @@ except ImportError:
 from .common import _parse_certificate
 
 
-@shared_task(name="keywatch.tasks.tasks_linux.scan_certificates_linux")
-def scan_certificates_linux(host, user, password):
+@shared_task(name="keywatch.tasks.tasks_linux.scan_certificates_linux", bind=True)
+def scan_certificates_linux(self, host, user, password):
     try:
         conn = Connection(host=host, user=user, connect_kwargs={"password": password})
 
         command = """sudo find / -type f \\( \
-                    -iname \"*.crt\" -o -iname \"*.cer\" -o -iname \"*.pem\" -o -iname \"*.der\" -o \
-                    -iname \"*.p7b\" -o -iname \"*.p7c\" -o -iname \"*.pfx\" -o -iname \"*.p12\" \
+                    -iname \"*.crt\" -o -iname \"*.cer\" -o -iname \"*.pem\" -o -iname \"*.der\" \
                     \\) \
                     -not -path \"/proc/*\" \
                     -not -path \"/sys/*\" \
@@ -32,14 +31,18 @@ def scan_certificates_linux(host, user, password):
         files = result.stdout.strip().split("\n")
 
         certificates = []
-        for file_path in files:
+        total_files = len(files)
+        for count, file_path in enumerate(files):
             if file_path.strip():
                 try:
-                    # Get file content
                     cat_result = conn.sudo(f"cat '{file_path}'", hide=True)
                     content = cat_result.stdout.encode()
                     cert = _parse_certificate(content)
                     if cert:
+                        self.update_state(
+                            state="PROGRESS",
+                            meta={"current": count + 1, "total": total_files},
+                        )
                         certificates.append(
                             {
                                 "file_path": file_path,
@@ -60,7 +63,7 @@ def scan_certificates_linux(host, user, password):
                 "certificates": certificates,
             }
             mongo.insert(data)
-            return {"status": "certificate saved"}
+            return {"current": count, "total": total_files}
         else:
             return {"status": "no certificates found"}
     except Exception as e:

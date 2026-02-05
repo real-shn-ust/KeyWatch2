@@ -11,3 +11,4 @@ requests
 pymongo
 flask-jwt-extended
 werkzeug
+flask-cors

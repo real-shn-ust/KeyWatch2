@@ -1,6 +1,7 @@
 import os
 
 from flask import Flask
+from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
 from .api import api
@@ -9,6 +10,7 @@ from .tasks import celery as celery_app
 
 def create_app():
     app = Flask(__name__)
+    CORS(app)
     app.config["JWT_SECRET_KEY"] = "fac0dbd5"
     jwt = JWTManager(app)
 

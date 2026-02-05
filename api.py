@@ -3,7 +3,7 @@ import ipaddress
 
 import nmap
 from celery import chain, group
-from celery.result import GroupResult
+from celery.result import AsyncResult, GroupResult
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token, jwt_required
 from werkzeug.security import check_password_hash
@@ -78,11 +78,32 @@ def scan():
 @api.route("/status/<task_id>", methods=["GET"])
 @jwt_required()
 def task_status(task_id):
-    res = GroupResult.restore(task_id)
+    group = GroupResult.restore(task_id)
+    if not group:
+        return {"error": "No group result"}, 204
+
+    # return {
+    #     "ready": res.ready() if res else False,
+    #     "successful": res.successful() if res else False,
+    #     "value": res.get() if (res and res.ready() and res.successful()) else None,
+    # }, 200
+
+    completed = 0
+    total = 0
+
+    for res in group.results:
+        r = AsyncResult(res.id)
+        data = r.info
+
+        completed += data.get("current", 0)
+        total += data.get("total", 0)
+
+    progress = round((completed / total) * 100, 2) if total else 0
+
     return {
-        "ready": res.ready() if res else False,
-        "successful": res.successful() if res else False,
-        "value": res.get() if (res and res.ready() and res.successful()) else None,
+        "completed": completed,
+        "total": total,
+        "progress": progress,
     }, 200
 
 
