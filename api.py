@@ -38,7 +38,7 @@ def login():
 
 
 @api.route("/scan", methods=["POST"])
-@jwt_required()
+# @jwt_required()
 def scan():
     data = request.get_json()
     host = data.get("host")
@@ -76,17 +76,11 @@ def scan():
 
 
 @api.route("/status/<task_id>", methods=["GET"])
-@jwt_required()
+# @jwt_required()
 def task_status(task_id):
     group = GroupResult.restore(task_id)
     if not group:
         return {"error": "No group result"}, 204
-
-    # return {
-    #     "ready": res.ready() if res else False,
-    #     "successful": res.successful() if res else False,
-    #     "value": res.get() if (res and res.ready() and res.successful()) else None,
-    # }, 200
 
     completed = 0
     total = 0
@@ -95,8 +89,9 @@ def task_status(task_id):
         r = AsyncResult(res.id)
         data = r.info
 
-        completed += data.get("current", 0)
-        total += data.get("total", 0)
+        if data:
+            completed += data.get("current", 0)
+            total += data.get("total", 0)
 
     progress = round((completed / total) * 100, 2) if total else 0
 
@@ -108,7 +103,7 @@ def task_status(task_id):
 
 
 @api.get("/certificates")
-@jwt_required()
+# @jwt_required()
 def certificates():
     page = int(request.args.get("page", 1))
     page_size = int(request.args.get("page_size", 10))
@@ -131,7 +126,7 @@ def certificates():
 
 
 @api.get("/certificates/<id>")
-@jwt_required()
+# @jwt_required()
 def certificate(id):
     document = mongo.get(id)
 

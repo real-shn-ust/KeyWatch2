@@ -32,8 +32,8 @@ def _parse_certificate(content: bytes) -> Certificate | None:
     return Certificate(
         subject=certificate.subject.rfc4514_string(),
         issuer=certificate.issuer.rfc4514_string(),
-        not_valid_before=certificate.not_valid_before,
-        not_valid_after=certificate.not_valid_after,
+        not_valid_before=certificate.not_valid_before_utc,
+        not_valid_after=certificate.not_valid_after_utc,
         serial_number=str(certificate.serial_number),
         signature_algorithm=certificate.signature_algorithm_oid._name,
     )

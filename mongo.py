@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 
 from bson import ObjectId
 from pymongo import MongoClient
@@ -13,7 +13,7 @@ collection = client[DB][COLLECTION]
 
 
 def insert(document):
-    document["timestamp"] = datetime.utcnow()
+    document["timestamp"] = datetime.now(UTC)
     res = collection.insert_one(document)
 
     return res.inserted_id

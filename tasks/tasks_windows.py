@@ -17,13 +17,11 @@ from .common import _parse_certificate
 @shared_task(name="keywatch.tasks.tasks_windows.scan_certificates_windows", bind=True)
 def scan_certificates_windows(self, host, user, password):
     try:
-        # Create WinRM session
         session = winrm.Session(
             host,
             auth=(user, password),
         )
 
-        # Get certificates from Windows Certificate Store using PowerShell
         ps_cmd = """
         $certificates = Get-ChildItem Cert:\\LocalMachine\\*, Cert:\\CurrentUser\\* -Recurse | Where-Object { $_ -is [System.Security.Cryptography.X509Certificates.X509Certificate2] }
         $results = @()
@@ -44,7 +42,6 @@ def scan_certificates_windows(self, host, user, password):
 
         cert_data = json.loads(result.std_out.decode().strip())
 
-        certificates = []
         total_files = len(cert_data)
         for count, item in enumerate(cert_data):
             try:
@@ -52,30 +49,25 @@ def scan_certificates_windows(self, host, user, password):
                 cert = _parse_certificate(content)
                 if cert:
                     store_path = f"{item['StorePath']}\\{item['Thumbprint']}"
-                    certificates.append(
-                        {
-                            "file_path": store_path,
-                            "subject": cert.subject,
-                            "issuer": cert.issuer,
-                            "not_valid_before": cert.not_valid_before.isoformat(),
-                            "not_valid_after": cert.not_valid_after.isoformat(),
-                            "serial_number": cert.serial_number,
-                            "signature_algorithm": cert.signature_algorithm,
-                        }
-                    )
+                    data = {
+                        "host": host,
+                        "file_path": store_path,
+                        "subject": cert.subject,
+                        "issuer": cert.issuer,
+                        "not_valid_before": cert.not_valid_before,
+                        "not_valid_after": cert.not_valid_after,
+                        "serial_number": cert.serial_number,
+                        "signature_algorithm": cert.signature_algorithm,
+                    }
+                    mongo.insert(data)
+
                     self.update_state(
                         state="PROGRESS",
                         meta={"current": count + 1, "total": total_files},
                     )
             except Exception as e:
-                pass  # Skip certificates that can't be parsed
+                return {"error": str(e)}
 
-        # Save to Excel file
-        if certificates:
-            data = {"host": host, "certificates": certificates}
-            mongo.insert(data)
-            return {"current": count, "total": total_files}
-        else:
-            return {"status": "no certificates found"}
+        return {"current": count, "total": total_files}
     except Exception as e:
         return {"error": str(e)}
