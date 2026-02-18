@@ -5,6 +5,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 
 from .api import api
+from .certificate import certificate_bp
 from .tasks import celery as celery_app
 
 
@@ -24,11 +25,6 @@ def create_app():
     celery_app.conf.update(app.config)
 
     app.register_blueprint(api)
+    app.register_blueprint(certificate_bp)
 
     return app
-
-
-# app = create_app()
-
-# if __name__ == "__main__":
-#     app.run(debug=True, host="0.0.0.0")

@@ -84,10 +84,14 @@ def task_status(task_id):
 
     completed = 0
     total = 0
+    running = False
 
     for res in group.results:
         r = AsyncResult(res.id)
         data = r.info
+
+        if not r.ready():
+            running = True
 
         if data:
             completed += data.get("current", 0)
@@ -99,38 +103,5 @@ def task_status(task_id):
         "completed": completed,
         "total": total,
         "progress": progress,
+        "running": running,
     }, 200
-
-
-@api.get("/certificates")
-# @jwt_required()
-def certificates():
-    page = int(request.args.get("page", 1))
-    page_size = int(request.args.get("page_size", 10))
-
-    if page < 1 or page_size < 1:
-        return {"error": "Invalid pagination parameters"}, 400
-
-    skip = (page - 1) * page_size
-
-    documents = mongo.documents(skip=skip, page_size=page_size)
-    for doc in documents:
-        doc["_id"] = str(doc["_id"])
-
-    return {
-        "page": page,
-        "page_size": page_size,
-        "count": len(documents),
-        "certificates": documents,
-    }, 200
-
-
-@api.get("/certificates/<id>")
-# @jwt_required()
-def certificate(id):
-    document = mongo.get(id)
-
-    if document:
-        return document, 200
-
-    return {"error": "Document doesn't exists"}, 404
